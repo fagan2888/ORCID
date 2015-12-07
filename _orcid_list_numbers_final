@@ -1,0 +1,94 @@
+#This queries the ORCID API via spreadsheet and returns a list of publications. 
+#It assumes that the ORCID number is always in the 2nd column.If this changes, alter list in lines 18 and 19.
+#This code does NOT include an ORCID Public API authentication code. 
+
+#!Python 3.4
+
+import requests
+import json
+import csv
+#import pdb
+
+#Open csv file to read from
+f = open('orcid.csv')
+csv_f = csv.reader(f)
+
+#Open csv file to write to
+output_file = open('orcidtest2.csv', 'w', newline='')
+data2 = csv.writer(output_file)
+data2.writerow(['Name', 'Date', 'DOI', 'Publication', 'Journal', ''])
+
+#query the API by ORCID number to receive list of publications
+
+for record in csv_f:
+	researcherNumber = record[1]
+	researcherName = record[0]
+
+	resp = requests.get("http://pub.orcid.org/" + researcherNumber + "/orcid-works", headers={'Accept':'application/orcid+json'})
+	results = resp.json()
+	#data = []
+	TITLES, DOIs = [], []
+
+
+	
+	#This section is to makie sure that the enumerate function doesn't choke.
+	#If any of these return None, break out of the current loop and go to the next record in csv_f
+	if results['orcid-profile'] is None:
+		continue
+	elif results['orcid-profile']['orcid-activities'] is None:
+		continue
+	elif results['orcid-profile']['orcid-activities']['orcid-works'] is None:
+		continue
+	elif results['orcid-profile']['orcid-activities']['orcid-works']['orcid-work'] is None:
+		continue
+	
+
+
+	#pdb.set_trace()
+
+	#assign variables to various JSON fields (journal titles, article titles, etc.)
+
+	for result in results['orcid-profile']['orcid-activities']['orcid-works']['orcid-work']:
+		title = str(result['work-title']['title']['value'].encode('utf-8'))
+
+		doi = result.get('work-external-identifiers', "")
+		if doi is None:
+			continue
+		for eid in result['work-external-identifiers']['work-external-identifier']:
+			if eid['work-external-identifier-type'] == 'DOI':
+				doi = str(eid['work-external-identifier-id']['value'].encode('utf-8'))
+
+
+		#if len(doi.split('\n')) == 2:
+		#	doi = doi.split('\n')[1]
+
+
+		journal_title = result.get('journal-title', "")
+		if journal_title:
+			journal = journal_title.get('value', "").encode('utf-8')
+		else:
+			journal = 'Unknown'
+
+		pub_date = result.get('publication-date', None)
+		if pub_date:
+			year = pub_date.get('year', None).get('value').encode('utf-8')
+		else:
+			year = 'Unknown'
+
+		#check for duplicate titles
+		dup = False
+		if title.lower() in TITLES:
+			dup = True
+		if (doi != 'None'
+			and doi.lower() in DOIs):
+			dup = True
+		TITLES.append(title.lower())
+		DOIs.append(doi.lower())
+
+		#export data to .csv file
+		if not dup:
+			data2.writerow([researcherName, year, doi, title, journal])
+
+output_file.close()
+
+
