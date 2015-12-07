@@ -14,7 +14,7 @@ f = open('orcid.csv')
 csv_f = csv.reader(f)
 
 #Open csv file to write to
-output_file = open('orcidtest2.csv', 'w', newline='')
+output_file = open('orcidtest.csv', 'w', newline='')
 data2 = csv.writer(output_file)
 data2.writerow(['Name', 'Date', 'DOI', 'Publication', 'Journal', ''])
 
