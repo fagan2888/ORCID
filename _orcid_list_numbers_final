@@ -26,12 +26,11 @@ for record in csv_f:
 
 	resp = requests.get("http://pub.orcid.org/" + researcherNumber + "/orcid-works", headers={'Accept':'application/orcid+json'})
 	results = resp.json()
-	#data = []
 	TITLES, DOIs = [], []
 
 
 	
-	#This section is to makie sure that the enumerate function doesn't choke.
+	#This section is to make sure that the enumerate function doesn't choke.
 	#If any of these return None, break out of the current loop and go to the next record in csv_f
 	if results['orcid-profile'] is None:
 		continue
